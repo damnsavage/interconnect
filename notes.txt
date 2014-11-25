@@ -1,0 +1,53 @@
+AHB seems to be largely overkill, most features not required.
+No pipelining, protection, split/retry, arbitration etc...
+
+APB seems closer to what we need. No consumption when no transfer.
+Maybe wait states required probably no slverr needed
+
+Bus decoder + arbiter ?
+One APB master slave per TDM.
+
+Alternatively 
+  - 1 single APB master and slave per Sinks
+  - 1 single APB master and slave per Sources
+
+Add a counter block which counts a programmable window using pclk.
+How many cycles were there no psels active during the window.
+Status congestion register. Makes it easy to use minimum bus clock frequency.
+
+Registers should be part of this block add apb master to i2c block.
+
+    sink0.dest_addr          source0.source_addr
+    sink1.dest_addr          source0.source_addr
+    sink2.dest_addr          source0.source_addr
+      :   :   :                :   :   :
+    sinkn.dest_addr          source0.source_addr
+
+    congestion monitor enable
+    congestion status ( active cycles / window size )
+
+
+
+
+
+=======================
+Cost of APB state machine:
+-------------------------
+
+we need to register all slave source data and sink valids.
+That's roughly 58x24 + 48 registers = 1440 registers!!!
+We could avoid the source data registers if we used the 
+source IPs to register the data as its doing today.
+i.e. add apb slave to the TDM IP. 
+Problem with this is it requires changing the IPs...
+
+Also we need a small state machine for each master (2registers + logic)
+We need an arbiter in the case of multi master.
+
+To program the mapping we need an 8 bit destination address per source.
+That's 24 16bit source mapping registers.
+
+2 clock cycles per transfer. 
+Clock can be gated when no transfers.
+clock frequency should be reduced according to scenario.
+
