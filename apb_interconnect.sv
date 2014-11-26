@@ -27,13 +27,16 @@
 // `PACK_ARRAY(16,2,in,pack_16_2_out)   
 // 
 ///////////////////// 
-module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data);
+
+module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids, 
+                        slave_data, slave_valids);
    input  reset;
    input  pclk;
-   input  [`DATA_WIDTH-1:0] master_data [`NUM_SINKS-1:0];
-   input  [`ADDR_WIDTH-1:0] dest_addrs  [`NUM_SINKS-1:0];
-   input  [`NUM_SINKS-1:0]  valids;
-   output [`DATA_WIDTH-1:0] slave_data  [`NUM_SOURCES-1:0];
+   input  [`DATA_WIDTH-1:0]  master_data [`NUM_SINKS-1:0];
+   input  [`ADDR_WIDTH-1:0]  dest_addrs  [`NUM_SINKS-1:0];
+   input  [`NUM_SINKS-1:0]   master_valids;
+   output [`DATA_WIDTH-1:0]  slave_data;
+   output [`NUM_SOURCES-1:0] slave_valids;
 
    wire reset, pclk;
    wire mst0_psel, mst0_penable;
@@ -42,9 +45,10 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
    wire [`ADDR_WIDTH-1:0] paddr;
    wire [`DATA_WIDTH-1:0] pwdata, prdata;
    wire [`DATA_WIDTH-1:0] mst0_din;
+   reg [`NUM_SOURCES-1:0] slave_valids;
 
-   reg  [`NUM_SINKS-1:0] valids_reg;
-   reg  [`NUM_SINKS-1:0] valids_r;
+   reg  [`NUM_SINKS-1:0]  valids_reg;
+   reg  [`NUM_SINKS-1:0]  valids_r;
    reg  [`DATA_WIDTH-1:0] mst_dout;
    reg  [`ADDR_WIDTH-1:0] dest_addr;
    reg  [`ADDR_WIDTH-1:0] source_addr;
@@ -60,7 +64,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
       .pclk ( pclk), .reset( reset ), .psel( mst0_psel ),
       .penable( mst0_penable ), .pwrite ( pwrite ), .paddr( paddr ),
       .pwdata( pwdata ), .prdata( prdata ),
-      .valids( valids_r ), .ip_din( mst0_din ), .ip_dout( mst_dout ), .ip_addr( dest_addr )
+      .valids( valids_r ), .ip_din( ), .ip_dout( mst_dout ), .ip_addr( dest_addr )
       );
 
    apb_slave slave0 (
@@ -81,6 +85,9 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
    assign mst_dout  = master_data[current_idx];
    assign dest_addr = dest_addrs[current_idx];
 
+   // Slave writes
+   assign slave_data = pwdata;  
+
    //////////////////////////////////////////
    //
    // MAIN
@@ -91,7 +98,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
        if (reset)
          valids_reg <= 0;
        else 
-         valids_reg <= valids;
+         valids_reg <= master_valids;
          
    genvar j;
    generate
@@ -99,10 +106,24 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
            always @(posedge pclk or negedge reset) 
                if (reset)
                    valids_r[j] <= 0;
-               else if (valids[j] == 1 && valids_reg[j] == 0) 
+               else if (master_valids[j] == 1 && valids_reg[j] == 0) 
                // rising edge
                    valids_r[j] <= 1;
        end
+   endgenerate
+
+   // Generate output valid for source X when writing to source X
+   generate
+       for (j=0; j < `NUM_SOURCES; j = j + 1) begin
+           always @(slv0_wr or reset) 
+               if (reset)
+                   slave_valids[j] <= 0;
+               else if (slv0_wr == 1 && paddr == j) 
+                   slave_valids[j] <= 1;
+               else 
+                   slave_valids[j] <= 0;
+       end
+// to fix...
    endgenerate
    
    // Deassert valids_r when relevant data was transferred
@@ -112,13 +133,13 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
           valids_r[current_idx]   = 0;
       end
       
-   // LSB of valids are transfered first
+   // LSB of master_valids are transfered first
 //   generate
 //       for (i=`NUM_SINKS-1; i >= 0 && i <= `NUM_SINKS-1; i = i - 1) begin
 //           always @(valids_r or negedge reset) 
 //               if (!reset)
 //                 current_idx = 0;
-//               else if (valids[i] == 1)
+//               else if (master_valids[i] == 1)
 //                 current_idx = i;
 //       end
 //   endgenerate
@@ -131,6 +152,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
           for (i=`NUM_SINKS-1; i >= 0 && i <= `NUM_SINKS-1; i = i - 1)
               if (valids_r[i] == 1)
                   current_idx = i;      
+// to fix...
+// changes too late so send 1st data twice...
    end
 
    /////////////////////////////   
@@ -260,12 +283,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, valids, slave_data
    // 30 cf - low_latency_out_left
    // 31 cf - low_latency_out_right
 
-   // Slave writes
-   always@(posedge pclk)
-       if (slv0_wr == 1) begin
-           // we need to register all outputs
-           slave_data[paddr] = pwdata;  
-       end          
 
 
+   // Add gray encode / decode to data to reduce signal transitions??
+   
 endmodule

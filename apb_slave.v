@@ -1,6 +1,3 @@
-`define ADDR_WIDTH  8
-`define DATA_WIDTH 24
-
 module apb_slave (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
                   wr, rd);
     input                    pclk;

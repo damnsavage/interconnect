@@ -1,7 +1,3 @@
-`define ADDR_WIDTH    8
-`define DATA_WIDTH   24
-`define NUM_SINKS    58
-`define NUM_SOURCES  48
 
 module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
                    valids, ip_din, ip_dout, ip_addr);

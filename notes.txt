@@ -26,9 +26,14 @@ Registers should be part of this block add apb master to i2c block.
     congestion monitor enable
     congestion status ( active cycles / window size )
 
-
-
-
+=======================
+Issues:
+------
+ - Seems to be sending the first and last data twice!
+   due to current idx changing at same time as ACCESS to SETUP transition
+ - You need to try a synthesis of the end product
+   => expect 1 master state machine (2regs) rest is combinational
+ - source valids out not correct
 
 =======================
 Cost of APB state machine:
@@ -40,6 +45,9 @@ We could avoid the source data registers if we used the
 source IPs to register the data as its doing today.
 i.e. add apb slave to the TDM IP. 
 Problem with this is it requires changing the IPs...
+
+You don't need to register the data if you generate the output valids
+The output valid is just psel & penable & pwrite.
 
 Also we need a small state machine for each master (2registers + logic)
 We need an arbiter in the case of multi master.
