@@ -10,6 +10,7 @@ INCA_libs/
 simvision*
 .simvision*
 irun.key
+opencores/
 
 # Compiled source #
 ###################

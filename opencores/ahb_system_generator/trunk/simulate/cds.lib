@@ -1,2 +1,0 @@
-DEFINE work ../compile
-SOFTINCLUDE $CADENCEDIR/ncsim/tools/inca/files/cds.lib

@@ -36,6 +36,7 @@ Issues:
  - source valids out not correct
 
 =======================
+
 Cost of APB state machine:
 -------------------------
 
@@ -59,3 +60,12 @@ That's 24 16bit source mapping registers.
 Clock can be gated when no transfers.
 clock frequency should be reduced according to scenario.
 
+========================
+Synthesis
+---------
+
+use cadence RC
+> rc -gui
+
+.tcl - tcl constraints file?
+.tcf - transition change format similar to saif for power estimation
