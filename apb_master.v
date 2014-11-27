@@ -1,6 +1,6 @@
 
 module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
-                   valids, ip_din, ip_dout, ip_addr);
+                   done, ip_din, ip_dout, ip_addr);
     input                    pclk;
     input                    reset;
     output                   psel;
@@ -12,7 +12,7 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
     output [`DATA_WIDTH-1:0] ip_din;
     input  [`DATA_WIDTH-1:0] ip_dout;
     input  [`ADDR_WIDTH-1:0] ip_addr;
-    input  [`NUM_SINKS-1:0]  valids;
+    input                    done;
 
 `ifdef APB3
     input pslverr;
@@ -23,9 +23,7 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
    reg  [`DATA_WIDTH-1:0] din_r;   
 
    //-------------Output Ports Data Type------------------
-   reg psel, penable, pwrite;
-   reg [`ADDR_WIDTH-1:0] paddr;
-   reg [`DATA_WIDTH-1:0] pwdata;
+   reg psel, penable;
    
    //-------------Internal Constants--------------------------
    parameter IDLE = 1, SETUP = 3, ACCESS = 2;
@@ -35,19 +33,19 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
    reg  [1:0]   next_state; // combo part of FSM
 
    //----------State machine combinational logic--------------
-   always @ (state or valids)
+   always @ (state or done)
    begin : FSM_COMBO
       next_state = IDLE;
       case(state)
           IDLE   : 
-              if (valids != 0)
+              if (!done)
                 next_state = SETUP;
               else
                 next_state = IDLE;
           SETUP  : 
               next_state = ACCESS;
           ACCESS : 
-              if (valids == 0)
+              if (done)
                  next_state = IDLE;
               else
                  next_state = SETUP;
@@ -73,9 +71,6 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
       if (reset == 1'b1) begin
           psel    <=  #1  1'b0;
           penable <=  #1  1'b0;
-          pwrite  <=  #1  1'b1;  // always writing
-          paddr   <=  #1  1'b0;
-          pwdata  <=  #1  1'b0;
       end
       else begin
         case(state)
@@ -86,8 +81,6 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
          SETUP : begin
                    psel    <=  #1  1'b1;
                    penable <=  #1  1'b0;
-                   paddr   <=  #1  ip_addr;
-                   pwdata  <=  #1  ip_dout;
                  end
          ACCESS : begin
                    psel    <=  #1  1'b1;
@@ -96,14 +89,14 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
          default : begin
                    psel    <=  #1  1'b0;
                    penable <=  #1  1'b0;
-                   pwrite  <=  #1  1'b1;
-                   paddr   <=  #1  1'b0;
-                   pwdata  <=  #1  1'b0;
                  end
         endcase
       end
    end 
-
+   
+   assign pwrite = 1;
+   assign paddr  = ip_dout;
+   assign pwdata = ip_addr;
 
 endmodule
 

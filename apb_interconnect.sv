@@ -45,7 +45,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    wire [`ADDR_WIDTH-1:0] paddr;
    wire [`DATA_WIDTH-1:0] pwdata, prdata;
    wire [`DATA_WIDTH-1:0] mst0_din;
-   reg [`NUM_SOURCES-1:0] slave_valids;
+   reg  [`NUM_SOURCES-1:0] slave_valids;
 
    reg  [`NUM_SINKS-1:0]  valids_reg;
    reg  [`NUM_SINKS-1:0]  valids_r;
@@ -53,7 +53,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    reg  [`ADDR_WIDTH-1:0] dest_addr;
    reg  [`ADDR_WIDTH-1:0] source_addr;
    
-   reg   [5:0] i, current_idx; // Log2(NUM_SINKS)
+   reg  [5:0] i, current_idx; // Log2(NUM_SINKS)
+   reg   done, pclk_gated;
    
    //////////////////////////////////////////
    //
@@ -61,32 +62,18 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    //
    //////////////////////////////////////////
    apb_master master0 (
-      .pclk ( pclk), .reset( reset ), .psel( mst0_psel ),
+      .pclk ( pclk_gated ), .reset( reset ), .psel( mst0_psel ),
       .penable( mst0_penable ), .pwrite ( pwrite ), .paddr( paddr ),
       .pwdata( pwdata ), .prdata( prdata ),
-      .valids( valids_r ), .ip_din( ), .ip_dout( mst_dout ), .ip_addr( dest_addr )
+      .done( done ), .ip_din( ), .ip_dout( mst_dout ), .ip_addr( dest_addr )
       );
 
    apb_slave slave0 (
-      .pclk ( pclk), .reset( reset ), .psel( slv0_psel ),
+      .pclk ( pclk_gated ), .reset( reset ), .psel( slv0_psel ),
       .penable( slv0_penable ), .pwrite ( pwrite ), .paddr( paddr ),
       .pwdata( pwdata ), .prdata( prdata ),
       .wr( slv0_wr ), .rd( slv0_rd )
       );
-
-   //////////////////////////////////////////
-   //
-   // Assignments
-   //
-   //////////////////////////////////////////
-   assign slv0_psel    = mst0_psel;
-   assign slv0_penable = mst0_penable;
-   
-   assign mst_dout  = master_data[current_idx];
-   assign dest_addr = dest_addrs[current_idx];
-
-   // Slave writes
-   assign slave_data = pwdata;  
 
    //////////////////////////////////////////
    //
@@ -148,13 +135,34 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    begin
       if (reset)
           current_idx = 0;
+          done = 1;
       if (valids_r != 0)
+          done = 0;
           for (i=`NUM_SINKS-1; i >= 0 && i <= `NUM_SINKS-1; i = i - 1)
               if (valids_r[i] == 1)
                   current_idx = i;      
 // to fix...
-// changes too late so send 1st data twice...
+// Should be a combinational process...
+// Also issue with last data being sent twice
    end
+
+
+   //////////////////////////////////////////
+   //
+   // Assignments
+   //
+   //////////////////////////////////////////
+   assign slv0_psel    = mst0_psel;
+   assign slv0_penable = mst0_penable;
+   
+   assign mst_dout  = master_data[current_idx];
+   assign dest_addr = dest_addrs[current_idx];
+
+   // Slave writes
+   assign slave_data = pwdata;  
+   
+   // not correct way to gate clock
+   assign pclk_gated = (!done || slv0_psel) ? pclk : 1;
 
    /////////////////////////////   
    // APB decoder
