@@ -28,9 +28,9 @@
 // 
 ///////////////////// 
 
-module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids, 
+module apb_interconnect(rstn, pclk, master_data, dest_addrs, master_valids, 
                         slave_data, slave_valids, src_brdcst_subscription);
-   input  reset;
+   input  rstn;
    input  pclk;
    input  [`DATA_WIDTH-1:0]  master_data [`NUM_SINKS-1:0];
    input  [`ADDR_WIDTH-1:0]  dest_addrs  [`NUM_SINKS-1:0];
@@ -39,7 +39,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    output [`NUM_SOURCES-1:0] slave_valids;
    input  [`NUM_SOURCES-1:0] src_brdcst_subscription;
 
-   wire reset, pclk;
+   wire rstn, pclk;
    wire mst0_psel, mst0_penable;
    wire slv0_psel, slv0_penable;   
    wire pwrite, slv0_wr, slv0_rd;
@@ -54,8 +54,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    reg  [`ADDR_WIDTH-1:0] dest_addr;
    reg  [`ADDR_WIDTH-1:0] source_addr;
    
-   reg  [5:0] i, current_idx; // Log2(NUM_SINKS)
-   reg   done, pclk_gated;
+   reg  [`LOG2_NUM_SINKS-1:0] i, current_idx;
+   reg        done, pclk_gated;
    
    //////////////////////////////////////////
    //
@@ -63,14 +63,14 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    //
    //////////////////////////////////////////
    apb_master master0 (
-      .pclk ( pclk_gated ), .reset( reset ), .psel( mst0_psel ),
+      .pclk ( pclk_gated ), .rstn( rstn ), .psel( mst0_psel ),
       .penable( mst0_penable ), .pwrite ( pwrite ), .paddr( paddr ),
       .pwdata( pwdata ), .prdata( prdata ),
       .done( done ), .ip_din( ), .ip_dout( mst_dout ), .ip_addr( dest_addr )
       );
 
    apb_slave slave0 (
-      .pclk ( pclk_gated ), .reset( reset ), .psel( slv0_psel ),
+      .pclk ( pclk_gated ), .rstn( rstn ), .psel( slv0_psel ),
       .penable( slv0_penable ), .pwrite ( pwrite ), .paddr( paddr ),
       .pwdata( pwdata ), .prdata( prdata ),
       .wr( slv0_wr ), .rd( slv0_rd )
@@ -82,8 +82,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    //
    //////////////////////////////////////////
    // Assert valids_r on rising edge of valids
-   always @(posedge pclk or negedge reset) 
-       if (reset)
+   always @(posedge pclk or negedge rstn) 
+       if (!rstn)
          valids_reg <= 0;
        else 
          valids_reg <= master_valids;
@@ -91,8 +91,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    genvar j;
    generate
        for (j=0; j < `NUM_SINKS; j = j + 1) begin
-           always @(posedge pclk or negedge reset) 
-               if (reset)
+           always @(posedge pclk or negedge rstn) 
+               if (!rstn)
                    valids_r[j] <= 0;
                else if (master_valids[j] == 1 && valids_reg[j] == 0) 
                // rising edge
@@ -103,8 +103,8 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // Generate output valid for source X when writing to source X
    generate
        for (j=0; j < `NUM_SOURCES; j = j + 1) begin
-           always @(slv0_wr or reset) 
-               if (reset)
+           always @(slv0_wr or rstn or paddr or src_brdcst_subscription) 
+               if (!rstn)
                    slave_valids[j] <= 0;
                else if ( slv0_wr == 1 && (paddr == j || 
                          (paddr == `NUM_SOURCES && src_brdcst_subscription[j] == 1) ) // broadcast 
@@ -126,17 +126,17 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // LSB of master_valids are transfered first
 //   generate
 //       for (i=`NUM_SINKS-1; i >= 0 && i <= `NUM_SINKS-1; i = i - 1) begin
-//           always @(valids_r or negedge reset) 
-//               if (!reset)
+//           always @(valids_r or negedge rstn) 
+//               if (!rstn)
 //                 current_idx = 0;
 //               else if (master_valids[i] == 1)
 //                 current_idx = i;
 //       end
 //   endgenerate
 
-   always @(valids_r or posedge reset)
+   always @(valids_r or rstn)
    begin
-      if (reset)
+      if (!rstn)
           current_idx = 0;
           done = 1;
       if (valids_r != 0)
@@ -175,71 +175,71 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    /////////////////////////////
    // APB Address map
    /////////////////////////////
-   // Slave addresses:
-   // ----------------
-   // 0 - tdm1 source 0
-   // 0 - tdm1 source 1
-   // 0 - tdm1 source 2
-   // 0 - tdm1 source 3
-   // 0 - tdm1 source 4
-   // 0 - tdm1 source 5
-   // 0 - tdm1 source 6
-   // 0 - tdm1 source 7
-   // 0 - tdm2 source 0
-   // 0 - tdm2 source 1
-   // 0 - tdm2 source 2
-   // 0 - tdm2 source 3
-   // 0 - tdm2 source 4
-   // 0 - tdm2 source 5
-   // 0 - tdm2 source 6
-   // 0 - tdm2 source 7
-   // 0 - tdm3 source 0
-   // 0 - tdm3 source 1
-   // 0 - tdm3 source 2
-   // 0 - tdm3 source 3
-   // 0 - tdm3 source 4
-   // 0 - tdm3 source 5
-   // 0 - tdm3 source 6
-   // 0 - tdm3 source 7
-   // 0 - slimbus
-   // x - asrc_in_0
-   // x - asrc_in_1
-   // x - asrc_in_2
-   // x - asrc_in_3
-   // x - asrc_in_4
-   // x - asrc_out_0
-   // x - asrc_out_1
-   // x - asrc_out_2
-   // x - asrc_out_3
-   // x - asrc_out_4
-   // x - vad
-   // x - analog 0
-   // x - analog 1 
-   // x - analog 2
-   // x - analog 3
-   // x - analog 4
-   // x - analog 5
-   // x - analog 6
-   // x - analog 7
-   // x - decimator 0
-   // x - decimator 1 
-   // x - decimator 2
-   // x - decimator 3
-   // x - decimator 4
-   // x - decimator 5
-   // 0   cf - tdm_channel_1_left      
-   // 1   cf - tdm_channel_1_right     
-   // 2   cf - tdm_channel_2           
-   // 3   cf - tdm_channel_3           
-   // 4   cf - gain_second_device_in   
-   // 5   cf - voltage_sensing_left    
-   // 6   cf - current_sensing_left    
-   // 7   cf - voltage_sensing_right   
-   // 8   cf - current_sensing_right   
-   // 9   cf - pdm_channel_1           
-   // 10  cf - pdm_channel_2           
-   // 11  cf - pdm_channel_3           
-   // 12  cf - pdm_channel_4           
+   // Slave addresses:                            // Master addresses:
+   // ----------------                            // ----------------
+   // 0 - tdm1 source 0                           // 0 - tdm1 sink 0
+   // 0 - tdm1 source 1                           // 0 - tdm1 sink 1
+   // 0 - tdm1 source 2                           // 0 - tdm1 sink 2
+   // 0 - tdm1 source 3                           // 0 - tdm1 sink 3
+   // 0 - tdm1 source 4                           // 0 - tdm1 sink 4
+   // 0 - tdm1 source 5                           // 0 - tdm1 sink 5
+   // 0 - tdm1 source 6                           // 0 - tdm1 sink 6
+   // 0 - tdm1 source 7                           // 0 - tdm1 sink 7
+   // 0 - tdm2 source 0                           // 0 - tdm2 sink 0
+   // 0 - tdm2 source 1                           // 0 - tdm2 sink 1
+   // 0 - tdm2 source 2                           // 0 - tdm2 sink 2
+   // 0 - tdm2 source 3                           // 0 - tdm2 sink 3
+   // 0 - tdm2 source 4                           // 0 - tdm2 sink 4
+   // 0 - tdm2 source 5                           // 0 - tdm2 sink 5
+   // 0 - tdm2 source 6                           // 0 - tdm2 sink 6
+   // 0 - tdm2 source 7                           // 0 - tdm2 sink 7
+   // 0 - tdm3 source 0                           // 0 - tdm3 sink 0
+   // 0 - tdm3 source 1                           // 0 - tdm3 sink 1
+   // 0 - tdm3 source 2                           // 0 - tdm3 sink 2
+   // 0 - tdm3 source 3                           // 0 - tdm3 sink 3
+   // 0 - tdm3 source 4                           // 0 - tdm3 sink 4
+   // 0 - tdm3 source 5                           // 0 - tdm3 sink 5
+   // 0 - tdm3 source 6                           // 0 - tdm3 sink 6
+   // 0 - tdm3 source 7                           // 0 - tdm3 sink 7
+   // 0 - slimbus                                 // 0 - slimbus
+   // x - asrc_in_0                               // x - asrc_in_0
+   // x - asrc_in_1                               // x - asrc_in_1
+   // x - asrc_in_2                               // x - asrc_in_2
+   // x - asrc_in_3                               // x - asrc_in_3
+   // x - asrc_in_4                               // x - asrc_in_4
+   // x - asrc_out_0                              // x - asrc_out_0
+   // x - asrc_out_1                              // x - asrc_out_1
+   // x - asrc_out_2                              // x - asrc_out_2
+   // x - asrc_out_3                              // x - asrc_out_3
+   // x - asrc_out_4                              // x - asrc_out_4
+   // x - vad                                     // x - spkr current sensing left
+   // x - analog 0                                // x - spkr current sensing right
+   // x - analog 1                                // x - spkr voltage sensing left
+   // x - analog 2                                // x - spkr voltage sensing right
+   // x - analog 3                                // x - hdset current sensing left
+   // x - analog 4                                // x - hdset current sensing right
+   // x - analog 5                                // x - Microphone (decimator output 1) 
+   // x - analog 6                                // x - Microphone (decimator output 2) 
+   // x - analog 7                                // x - Microphone (decimator output 3) 
+   // x - decimator 1                             // x - Microphone (decimator output 4) 
+   // x - decimator 2                             // x - Microphone (decimator output 5) 
+   // x - decimator 3                             // x - Microphone (decimator output 6) 
+   // x - decimator 4                             // 17 cf - cf_audio_data_1_left             
+   // x - decimator 5                             // 18 cf - cf_audio_data_1_right    
+   // x - decimator 6                             // 19 cf - cf_audio_data_2_left          
+   // 0   cf - tdm_channel_1_left                 // 20 cf - cf_audio_data_2_right         
+   // 1   cf - tdm_channel_1_right                // 21 cf - tdm_out_channel_1_left        
+   // 2   cf - tdm_channel_2                      // 22 cf - tdm_out_channel_1_right       
+   // 3   cf - tdm_channel_3                      // 23 cf - tdm_out_channel_2_left        
+   // 4   cf - gain_second_device_in              // 24 cf - tdm_out_channel_2_right       
+   // 5   cf - voltage_sensing_left               // 25 cf - tdm_out_channel_3_left        
+   // 6   cf - current_sensing_left               // 26 cf - tdm_out_channel_3_right       
+   // 7   cf - voltage_sensing_right              // 27 cf - gain_out_second_device        
+   // 8   cf - current_sensing_right              // 28 cf - haptic_driver_control
+   // 9   cf - pdm_channel_1                      // 29 cf - gain_control_side_tone_mixing
+   // 10  cf - pdm_channel_2                      // 30 cf - low_latency_out_left
+   // 11  cf - pdm_channel_3                      // 31 cf - low_latency_out_right
+   // 12  cf - pdm_channel_4          
    // 13  cf - pdm_channel_5           
    // 14  cf - pdm_channel_6           
    // 15  cf - low_latency_in_1 (I sense left HS)
@@ -249,67 +249,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // Broadcast addresses:
    // --------------------
    // give some slaves several addresses
-   // If we want to allow one to many connections
-   
-   // Master addresses:
-   // ----------------
-   // 0 - tdm1 sink 0
-   // 0 - tdm1 sink 1
-   // 0 - tdm1 sink 2
-   // 0 - tdm1 sink 3
-   // 0 - tdm1 sink 4
-   // 0 - tdm1 sink 5
-   // 0 - tdm1 sink 6
-   // 0 - tdm1 sink 7
-   // 0 - tdm2 sink 0
-   // 0 - tdm2 sink 1
-   // 0 - tdm2 sink 2
-   // 0 - tdm2 sink 3
-   // 0 - tdm2 sink 4
-   // 0 - tdm2 sink 5
-   // 0 - tdm2 sink 6
-   // 0 - tdm2 sink 7
-   // 0 - tdm3 sink 0
-   // 0 - tdm3 sink 1
-   // 0 - tdm3 sink 2
-   // 0 - tdm3 sink 3
-   // 0 - tdm3 sink 4
-   // 0 - tdm3 sink 5
-   // 0 - tdm3 sink 6
-   // 0 - tdm3 sink 7
-   // 0 - slimbus
-   // x - asrc_in_0
-   // x - asrc_in_1
-   // x - asrc_in_2
-   // x - asrc_in_3
-   // x - asrc_in_4
-   // x - asrc_out_0
-   // x - asrc_out_1
-   // x - asrc_out_2
-   // x - asrc_out_3
-   // x - asrc_out_4
-   // x - spkr current sensing left
-   // x - spkr current sensing right
-   // x - spkr voltage sensing left
-   // x - spkr voltage sensing right
-   // x - hdset current sensing left
-   // x - hdset current sensing right
-   // x - Microphone (decimator output) 
-   // 17 cf - cf_audio_data_1_left             
-   // 18 cf - cf_audio_data_1_right    
-   // 19 cf - cf_audio_data_2_left          
-   // 20 cf - cf_audio_data_2_right         
-   // 21 cf - tdm_out_channel_1_left        
-   // 22 cf - tdm_out_channel_1_right       
-   // 23 cf - tdm_out_channel_2_left        
-   // 24 cf - tdm_out_channel_2_right       
-   // 25 cf - tdm_out_channel_3_left        
-   // 26 cf - tdm_out_channel_3_right       
-   // 27 cf - gain_out_second_device        
-   // 28 cf - haptic_driver_control
-   // 29 cf - gain_control_side_tone_mixing
-   // 30 cf - low_latency_out_left
-   // 31 cf - low_latency_out_right
+   // If we want to allow one to many connections  
 
    // Add gray encode / decode to data to reduce signal transitions??
    

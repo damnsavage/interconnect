@@ -1,7 +1,7 @@
-module apb_slave (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
+module apb_slave (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
                   wr, rd);
     input                    pclk;
-    input                    reset;
+    input                    rstn;
     input                    psel;
     input                    penable;
     input                    pwrite;

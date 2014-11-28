@@ -1,8 +1,8 @@
 
-module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
+module apb_master (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
                    done, ip_din, ip_dout, ip_addr);
     input                    pclk;
-    input                    reset;
+    input                    rstn;
     output                   psel;
     output                   penable;
     output                   pwrite;
@@ -58,7 +58,7 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
    //----------Seq Logic-----------------------------
    always @ (posedge pclk)
    begin : FSM_SEQ
-      if (reset == 1'b1) begin
+      if (!rstn) begin
         state <=  #1  IDLE;
       end else begin
         state <=  #1  next_state;
@@ -68,7 +68,7 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
    //----------Output Logic-----------------------------
    always @ (posedge pclk)
    begin : OUTPUT_LOGIC
-      if (reset == 1'b1) begin
+      if (!rstn) begin
           psel    <=  #1  1'b0;
           penable <=  #1  1'b0;
       end

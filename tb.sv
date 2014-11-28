@@ -9,7 +9,7 @@ module tb();
    reg  [`DATA_WIDTH-1:0]  source_data;
    reg  [`NUM_SOURCES-1:0] source_valids;
    
-   logic [7:0] i;     // max of Log2(NUM_SINKS)
+   logic [LOG2_NUM_SINKS-1:0] i;
    logic [5:0] delay;
    logic [5:0] rnd_address;
    logic [`NUM_SOURCES-1:0] src_brdcst_subscription;

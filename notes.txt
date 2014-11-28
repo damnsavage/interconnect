@@ -36,12 +36,15 @@ Issues:
  - You need to try a synthesis of the end product
    => expect 1 master state machine (2regs) rest is combinational
  - source valids out not correct
+ 
+ - Aside: does it make any sense to make the headset current sense 2channel decimator
+          available to anyone else??
 
 =======================
 
 Cost of APB state machine:
 -------------------------
-APB master 2 registers plus state machine logic
+APB master 2 registers for state machine, 2 registers to drive outputs
 APB slave 4 and gates
 Rising edge detect for each sink valid (59)
 
@@ -69,6 +72,7 @@ Optional congestion counter (need to count to 12500 : 8khz with 100MHz clock wor
 14 bit window counter, 1 enable bit (1 16bit register)
 14 bit status register (1 16bit register)
 
+Reduce significantly number of data buses to 1
 
 current audio mux: (23 registers)
 ------------------
@@ -92,11 +96,12 @@ AUDIO_SOURCE_SEL_1
 AUDIO_SOURCE_SEL_2
 AUDIO_DSP_IN_EN ?? needed ??
 HWDEC_BYPASS
-HWDEC_SRC
+HWDEC_SRC       ** need to keep this one
 AUDIO_ANA_EN
 AUDIO_ANA_SEL
 
 Currently using 226 of a maximum of 256 addresses
+You need to add the headset current sense decimator output as another sink
 
 ========================
 Synthesis
