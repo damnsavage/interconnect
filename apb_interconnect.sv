@@ -29,7 +29,7 @@
 ///////////////////// 
 
 module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids, 
-                        slave_data, slave_valids);
+                        slave_data, slave_valids, src_brdcst_subscription);
    input  reset;
    input  pclk;
    input  [`DATA_WIDTH-1:0]  master_data [`NUM_SINKS-1:0];
@@ -37,6 +37,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    input  [`NUM_SINKS-1:0]   master_valids;
    output [`DATA_WIDTH-1:0]  slave_data;
    output [`NUM_SOURCES-1:0] slave_valids;
+   input  [`NUM_SOURCES-1:0] src_brdcst_subscription;
 
    wire reset, pclk;
    wire mst0_psel, mst0_penable;
@@ -105,7 +106,9 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
            always @(slv0_wr or reset) 
                if (reset)
                    slave_valids[j] <= 0;
-               else if (slv0_wr == 1 && paddr == j) 
+               else if ( slv0_wr == 1 && (paddr == j || 
+                         (paddr == `NUM_SOURCES && src_brdcst_subscription[j] == 1) ) // broadcast 
+                        )
                    slave_valids[j] <= 1;
                else 
                    slave_valids[j] <= 0;
@@ -117,7 +120,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // i.e. after penable of the transfer
    always @(posedge pclk)       
       if (slv0_penable == 1) begin
-          valids_r[current_idx]   = 0;
+          valids_r[current_idx] = 0;
       end
       
    // LSB of master_valids are transfered first
@@ -233,6 +236,7 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // 14  cf - pdm_channel_6           
    // 15  cf - low_latency_in_1 (I sense left HS)
    // 16  cf - low_latency_in_2 (I sense right HS)
+   // 17  Broadcast
    //
    // Broadcast addresses:
    // --------------------
@@ -290,8 +294,6 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // 29 cf - gain_control_side_tone_mixing
    // 30 cf - low_latency_out_left
    // 31 cf - low_latency_out_right
-
-
 
    // Add gray encode / decode to data to reduce signal transitions??
    

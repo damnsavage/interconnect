@@ -95,8 +95,8 @@ module apb_master (pclk, reset, psel, penable, pwrite, paddr, pwdata, prdata,
    end 
    
    assign pwrite = 1;
-   assign paddr  = ip_dout;
-   assign pwdata = ip_addr;
+   assign paddr  = ip_addr;
+   assign pwdata = ip_dout;
 
 endmodule
 

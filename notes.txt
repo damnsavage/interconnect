@@ -26,10 +26,12 @@ Registers should be part of this block add apb master to i2c block.
     congestion monitor enable
     congestion status ( active cycles / window size )
 
+Gray encoding or similar to reduce bus toggling??
+
 =======================
 Issues:
 ------
- - Seems to be sending the first and last data twice!
+ - Seems to be sending the last data twice!
    due to current idx changing at same time as ACCESS to SETUP transition
  - You need to try a synthesis of the end product
    => expect 1 master state machine (2regs) rest is combinational
@@ -39,26 +41,26 @@ Issues:
 
 Cost of APB state machine:
 -------------------------
+APB master 2 registers plus state machine logic
+APB slave 4 and gates
+Rising edge detect for each sink valid (49)
 
-we need to register all slave source data and sink valids.
-That's roughly 58x24 + 48 registers = 1440 registers!!!
-We could avoid the source data registers if we used the 
-source IPs to register the data as its doing today.
-i.e. add apb slave to the TDM IP. 
-Problem with this is it requires changing the IPs...
+6bit destination address for each sink (25x16 bit registers)
+broadcast bit per source (59bits => 4x16bit register)
 
-You don't need to register the data if you generate the output valids
-The output valid is just psel & penable & pwrite.
+We would need an arbiter in the case of multi master.
 
-Also we need a small state machine for each master (2registers + logic)
-We need an arbiter in the case of multi master.
-
-To program the mapping we need an 8 bit destination address per source.
-That's 24 16bit source mapping registers.
+Logic to select current master valid/data from master data/valids array 
+Logic to generate current slave valid array from paddr
 
 2 clock cycles per transfer. 
-Clock can be gated when no transfers.
+Clock is gated when no transfers.
 clock frequency should be reduced according to scenario.
+
+Optional congestion counter (need to count to 12500 : 8khz with 100MHz clock worst case)
+14 bit window counter, 1 enable bit (1 16bit register)
+14 bit status register (1 16bit register)
+
 
 ========================
 Synthesis

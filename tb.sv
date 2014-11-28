@@ -12,6 +12,7 @@ module tb();
    logic [7:0] i;     // max of Log2(NUM_SINKS)
    logic [5:0] delay;
    logic [5:0] rnd_address;
+   logic [`NUM_SOURCES-1:0] src_brdcst_subscription;
 
    //////////////////////////////////////////
    //
@@ -21,7 +22,7 @@ module tb();
    apb_interconnect apb_bus (
       .reset( reset ), .pclk( pclk ), 
       .master_data( sink_data ), .dest_addrs( dest_addrs ), .master_valids( sink_valids ),
-      .slave_data( source_data ), .slave_valids( source_valids )
+      .slave_data( source_data ), .slave_valids( source_valids ), .src_brdcst_subscription( src_brdcst_subscription )
       );
 
 
@@ -46,19 +47,19 @@ module tb();
    // Generate Address, data and valids
    always @(posedge pclk)
    begin
-      delay = $random;  // should be long enough to transfer all data
-      #(5000*delay)
+      #(5000*24)
       
       for (i = 0; i < `NUM_SINKS; i = i + 1) begin
           sink_data[i] = $random;
           rnd_address = $random;
-          while(rnd_address > `NUM_SOURCES-1)
+          while(rnd_address > `NUM_SOURCES-1 + 1)
               rnd_address = $random;
-          dest_addrs[i] = rnd_address; // Should be < `NUM_SOURCES-1
+          dest_addrs[i] = rnd_address; // Should be < `NUM_SOURCES-1 + number of broadcast channels
       end
       sink_valids = $random;
+      src_brdcst_subscription = $random;
 
-      // deassert valids after 1 clock cycle
+      // de-assert valids after 1 clock cycle
       #1001;
       sink_valids = 0;
       
