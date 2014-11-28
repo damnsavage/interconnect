@@ -202,8 +202,16 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // 0 - tdm3 source 6
    // 0 - tdm3 source 7
    // 0 - slimbus
-   // x - asrc_in
-   // x - asrc_out
+   // x - asrc_in_0
+   // x - asrc_in_1
+   // x - asrc_in_2
+   // x - asrc_in_3
+   // x - asrc_in_4
+   // x - asrc_out_0
+   // x - asrc_out_1
+   // x - asrc_out_2
+   // x - asrc_out_3
+   // x - asrc_out_4
    // x - vad
    // x - analog 0
    // x - analog 1 
@@ -270,8 +278,16 @@ module apb_interconnect(reset, pclk, master_data, dest_addrs, master_valids,
    // 0 - tdm3 sink 6
    // 0 - tdm3 sink 7
    // 0 - slimbus
-   // x - asrc_in
-   // x - asrc_out
+   // x - asrc_in_0
+   // x - asrc_in_1
+   // x - asrc_in_2
+   // x - asrc_in_3
+   // x - asrc_in_4
+   // x - asrc_out_0
+   // x - asrc_out_1
+   // x - asrc_out_2
+   // x - asrc_out_3
+   // x - asrc_out_4
    // x - spkr current sensing left
    // x - spkr current sensing right
    // x - spkr voltage sensing left

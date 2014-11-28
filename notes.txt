@@ -43,11 +43,19 @@ Cost of APB state machine:
 -------------------------
 APB master 2 registers plus state machine logic
 APB slave 4 and gates
-Rising edge detect for each sink valid (49)
+Rising edge detect for each sink valid (59)
 
-6bit destination address for each sink (25x16 bit registers)
-broadcast bit per source (59bits => 4x16bit register)
-
+7bit destination address for each sink (30x16 bit registers)
+broadcast bit per source (69bits => 5x16bit register)
+  map_tdm1_sink01.sink0_dest_addr[5:0]
+  map_tdm1_sink01.sink1_dest_addr[5:0]
+  map_tdm1_sink23.sink2_dest_addr[5:0]
+  map_tdm1_sink23.sink3_dest_addr[5:0]
+     :   :   :
+  brdcst_subscription_0.tdm1_source0
+  brdcst_subscription_0.tdm1_source1
+     :   :   :
+  
 We would need an arbiter in the case of multi master.
 
 Logic to select current master valid/data from master data/valids array 
@@ -61,6 +69,34 @@ Optional congestion counter (need to count to 12500 : 8khz with 100MHz clock wor
 14 bit window counter, 1 enable bit (1 16bit register)
 14 bit status register (1 16bit register)
 
+
+current audio mux: (23 registers)
+------------------
+AUDIO_SINK_EN
+AUDIO_SOURCE_EN
+AUDIO_SINK_INT_SEL_0
+AUDIO_SINK_INT_SEL_1
+AUDIO_SOURCE_INT_SEL_0
+AUDIO_SOURCE_INT_SEL_1
+AUDIO_SINK_SLOT_0
+AUDIO_SINK_SLOT_1
+AUDIO_SINK_SLOT_2
+AUDIO_SINK_SLOT_3
+AUDIO_SOURCE_SLOT_0
+AUDIO_SOURCE_SLOT_1
+AUDIO_SOURCE_SLOT_2
+AUDIO_SOURCE_SLOT_3
+AUDIO_ASRC_BYPASS
+AUDIO_ASRC_SRC
+AUDIO_SOURCE_SEL_1
+AUDIO_SOURCE_SEL_2
+AUDIO_DSP_IN_EN ?? needed ??
+HWDEC_BYPASS
+HWDEC_SRC
+AUDIO_ANA_EN
+AUDIO_ANA_SEL
+
+Currently using 226 of a maximum of 256 addresses
 
 ========================
 Synthesis
