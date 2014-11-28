@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 
 module tb();
-   reg pclk, reset;
+   reg pclk, rstn;
 
    reg  [`NUM_SINKS-1:0]   sink_valids;
    reg  [`DATA_WIDTH-1:0]  sink_data   [`NUM_SINKS-1:0];
@@ -20,7 +20,7 @@ module tb();
    //
    //////////////////////////////////////////
    apb_interconnect apb_bus (
-      .reset( reset ), .pclk( pclk ), 
+      .rstn( rstn ), .pclk( pclk ), 
       .master_data( sink_data ), .dest_addrs( dest_addrs ), .master_valids( sink_valids ),
       .slave_data( source_data ), .slave_valids( source_valids ), .src_brdcst_subscription( src_brdcst_subscription )
       );
@@ -33,10 +33,10 @@ module tb();
    //////////////////////////////////////////
    initial begin
       pclk        = 0;
-      reset       = 1;
+      rstn        = 0;
       sink_valids = 0;
       #5000
-      reset = 0;
+      rstn = 1;
    end
 
    always begin
