@@ -65,7 +65,10 @@ module apb_master (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
       end
    end
 
-   //----------Output Logic-----------------------------
+   //----------Output Registers---------------------
+   //
+   // Can be avoided using combinational assign instead of register process
+   //
    always @ (posedge pclk)
    begin : OUTPUT_LOGIC
       if (!rstn) begin

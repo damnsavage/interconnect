@@ -23,6 +23,9 @@ set_attribute library {corelib_p_PttV1800T025.ldb}
 # type in the verilog files of your design after the read_hdl statement:
 set_attr hdl_search_path { /home/nxp66404/work/git/interconnect }
 read_hdl defines.v apb_slave.v apb_master.v -sv apb_interconnect.sv
+#read_hdl defines.v synthesis_trials/bin_mux_casez.v
+#read_hdl defines.v synthesis_trials/bin_mux_forloop.v
+#read_hdl defines.v -sv synthesis_trials/valid_handling.sv
 
 #elaborate <top_level_design_name>
 # the elaborate command builds the design (creats a design object). During elaboration RTL compiler
