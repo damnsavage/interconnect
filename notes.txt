@@ -33,22 +33,24 @@ Issues:
 ------
  - Seems to be sending the last data twice!
    due to current idx changing at same time as ACCESS to SETUP transition
- - You need to try a synthesis of the end product
-   => expect 1 master state machine (2regs) rest is combinational
  - source valids out not correct
  
  - Aside: does it make any sense to make the headset current sense 2channel decimator
           available to anyone else??
 
+ - Need to create separate bus with CF master to access control regs
+   Or add arbiter on existing bus
+
 =======================
 
 Cost of APB state machine:
 -------------------------
-APB master 2 registers for state machine, 2 registers to drive outputs
-APB slave 4 and gates
-Rising edge detect for each sink valid (59)
+APB master: 2 registers for state machine, optional 2 registers to drive outputs
+APB slave: 4 and gates
+Rising edge detect for each sink valid (64)
+  Additional register to deassert the valid (64)
 
-7bit destination address for each sink (30x16 bit registers)
+7bit destination address for each sink (32x16 bit registers)
 broadcast bit per source (69bits => 5x16bit register)
   map_tdm1_sink01.sink0_dest_addr[5:0]
   map_tdm1_sink01.sink1_dest_addr[5:0]
@@ -97,6 +99,7 @@ AUDIO_SOURCE_SEL_2
 AUDIO_DSP_IN_EN ?? needed ??
 HWDEC_BYPASS
 HWDEC_SRC       ** need to keep this one
+TX_CTRL1.CHANNEL_MUX_SEL[6:3]
 AUDIO_ANA_EN
 AUDIO_ANA_SEL
 
