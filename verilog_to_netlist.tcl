@@ -26,6 +26,7 @@ read_hdl defines.v apb_slave.v apb_master.v -sv apb_interconnect.sv
 #read_hdl defines.v synthesis_trials/bin_mux_casez.v
 #read_hdl defines.v synthesis_trials/bin_mux_forloop.v
 #read_hdl defines.v -sv synthesis_trials/valid_handling.sv
+#read_hdl defines.v -sv synthesis_trials/valid_handling2_sourceside.sv
 
 #elaborate <top_level_design_name>
 # the elaborate command builds the design (creats a design object). During elaboration RTL compiler
@@ -88,6 +89,12 @@ report clocks -ideal > reports/clockideal.rpt
 report clocks -generated > reports/clockgen.rpt
 report nets > reports/nets.rpt
 report power > reports/power.rpt
+
+#report area > synthesis_trials/reports/valid_handling.rpt
+#report gate >> synthesis_trials/reports/valid_handling.rpt
+
+#report area > synthesis_trials/reports/valid_handling2_source_side.rpt
+#report gate >> synthesis_trials/reports/valid_handling2_source_side.rpt
 
 # the final part of the RTL compiler flow involves writing out the netlists and constraints.
 # to write the gate-level netlist, use the write cmd. 

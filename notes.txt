@@ -28,6 +28,8 @@ Registers should be part of this block add apb master to i2c block.
 
 Gray encoding or similar to reduce bus toggling??
 
+Add CF APB master, JTAG master, I2C master and slave
+
 =======================
 Issues:
 ------
@@ -40,6 +42,7 @@ Issues:
 
  - Need to create separate bus with CF master to access control regs
    Or add arbiter on existing bus
+   
 
 =======================
 
@@ -106,6 +109,230 @@ AUDIO_ANA_SEL
 Currently using 226 of a maximum of 256 addresses
 You need to add the headset current sense decimator output as another sink
 
+
+========================
+Mapping:
+-------
+To allow one to many addressing 
+Instead of doing this:
+  - source address for each sink (8bits x #SINK)
+  - plus several source broadcast subscribe bits per source (#SOURCES x number of broadcast addresses)
+
+We can do this to allow easier one to many
+  - sink address for each source (8bits x #SOURCE)
+    i.e. which sink are we listening to
+
+   /////////////////////////////
+   // APB Master & slave ports
+   /////////////////////////////
+   Slave addresses:                            Master addresses:
+   ----------------                            ----------------
+   0 - tdm1 source 0                           0 - tdm1 sink 0
+   0 - tdm1 source 1                           0 - tdm1 sink 1
+   0 - tdm1 source 2                           0 - tdm1 sink 2
+   0 - tdm1 source 3                           0 - tdm1 sink 3
+   0 - tdm1 source 4                           0 - tdm1 sink 4
+   0 - tdm1 source 5                           0 - tdm1 sink 5
+   0 - tdm1 source 6                           0 - tdm1 sink 6
+   0 - tdm1 source 7                           0 - tdm1 sink 7
+   0 - tdm2 source 0                           0 - tdm2 sink 0
+   0 - tdm2 source 1                           0 - tdm2 sink 1
+   0 - tdm2 source 2                           0 - tdm2 sink 2
+   0 - tdm2 source 3                           0 - tdm2 sink 3
+   0 - tdm2 source 4                           0 - tdm2 sink 4
+   0 - tdm2 source 5                           0 - tdm2 sink 5
+   0 - tdm2 source 6                           0 - tdm2 sink 6
+   0 - tdm2 source 7                           0 - tdm2 sink 7
+   0 - tdm3 source 0                           0 - tdm3 sink 0
+   0 - tdm3 source 1                           0 - tdm3 sink 1
+   0 - tdm3 source 2                           0 - tdm3 sink 2
+   0 - tdm3 source 3                           0 - tdm3 sink 3
+   0 - tdm3 source 4                           0 - tdm3 sink 4
+   0 - tdm3 source 5                           0 - tdm3 sink 5
+   0 - tdm3 source 6                           0 - tdm3 sink 6
+   0 - tdm3 source 7                           0 - tdm3 sink 7
+   0 - slimbus                                 0 - slimbus
+   1 - slimbus                                 1 - slimbus
+   2 - slimbus                                 2 - slimbus
+   3 - slimbus                                 3 - slimbus
+   4 - slimbus                                 4 - slimbus
+   5 - slimbus                                 5 - slimbus
+   6 - slimbus                                 6 - slimbus
+   7 - slimbus                                 7 - slimbus
+   x - asrc_in_0                               x - asrc_in_0
+   x - asrc_in_1                               x - asrc_in_1
+   x - asrc_in_2                               x - asrc_in_2
+   x - asrc_in_3                               x - asrc_in_3
+   x - asrc_in_4                               x - asrc_in_4
+   x - asrc_in_5                               x - asrc_in_5
+   x - asrc_out_0                              x - asrc_out_0
+   x - asrc_out_1                              x - asrc_out_1
+   x - asrc_out_2                              x - asrc_out_2
+   x - asrc_out_3                              x - asrc_out_3
+   x - asrc_out_4                              x - asrc_out_4
+   x - asrc_out_5                              x - asrc_out_5
+   x - vad                                     x - spkr current sensing left
+   x - analog 0                                x - spkr current sensing right
+   x - analog 1                                x - spkr voltage sensing left
+   x - analog 2                                x - spkr voltage sensing right
+   x - analog 3                                x - hdset current sensing left
+   x - analog 4                                x - hdset current sensing right
+   x - analog 5                                x - Microphone (decimator output 1) 
+   x - analog 6                                x - Microphone (decimator output 2) 
+   x - analog 7                                x - Microphone (decimator output 3) 
+   x - decimator 1                             x - Microphone (decimator output 4) 
+   x - decimator 2                             x - Microphone (decimator output 5) 
+   x - decimator 3                             x - Microphone (decimator output 6)      
+   x - decimator 4                             17 cf - cf_audio_data_1_left            
+   x - decimator 5                             18 cf - cf_audio_data_1_right    
+   x - decimator 6                             19 cf - cf_audio_data_2_left          
+   0   cf - tdm_channel_1_left                 20 cf - cf_audio_data_2_right         
+   1   cf - tdm_channel_1_right                21 cf - tdm_out_channel_1_left        
+   2   cf - tdm_channel_2                      22 cf - tdm_out_channel_1_right       
+   3   cf - tdm_channel_3                      23 cf - tdm_out_channel_2_left        
+   4   cf - gain_second_device_in              24 cf - tdm_out_channel_2_right       
+   5   cf - voltage_sensing_left               25 cf - tdm_out_channel_3_left        
+   6   cf - current_sensing_left               26 cf - tdm_out_channel_3_right       
+   7   cf - voltage_sensing_right              27 cf - gain_out_second_device        
+   8   cf - current_sensing_right              28 cf - haptic_driver_control
+   9   cf - pdm_channel_1                      29 cf - gain_control_side_tone_mixing
+   10  cf - pdm_channel_2                      30 cf - low_latency_out_left
+   11  cf - pdm_channel_3                      31 cf - low_latency_out_right
+   12  cf - pdm_channel_4                      
+   13  cf - pdm_channel_5           
+   14  cf - pdm_channel_6           
+   15  cf - low_latency_in_1 (I sense left HS)
+   16  cf - low_latency_in_2 (I sense right HS)
+
+   /////////////////////////////
+   // APB Address map
+   /////////////////////////////
+   // 8 bit address 
+   // We have a an address register per source which indicates 
+   // which sink it's listening to
+   //
+   0x00  tdm1 slot 0  
+   0x01  tdm1 slot 1  
+   0x02  tdm1 slot 2  
+   0x03  tdm1 slot 3  
+   0x04  tdm1 slot 4  
+   0x05  tdm1 slot 5  
+   0x06  tdm1 slot 6  
+   0x07  tdm1 slot 7  
+   0x08  tdm1 slot 8  
+   0x09  tdm1 slot 9  
+   0x0A  tdm1 slot 10 
+   0x0B  tdm1 slot 11 
+   0x0C  tdm1 slot 12 
+   0x0D  tdm1 slot 13 
+   0x0E  tdm1 slot 14 
+   0x0F  tdm1 slot 15 
+   0x10  tdm2 slot 0  
+   0x11  tdm2 slot 1  
+   0x12  tdm2 slot 2  
+   0x13  tdm2 slot 3  
+   0x14  tdm2 slot 4  
+   0x15  tdm2 slot 5  
+   0x16  tdm2 slot 6  
+   0x17  tdm2 slot 7  
+   0x18  tdm2 slot 8  
+   0x19  tdm2 slot 9  
+   0x1A  tdm2 slot 10 
+   0x1B  tdm2 slot 11 
+   0x1C  tdm2 slot 12 
+   0x1D  tdm2 slot 13 
+   0x1E  tdm2 slot 14 
+   0x1F  tdm2 slot 15 
+   0x20  tdm3 slot 0  
+   0x21  tdm3 slot 1  
+   0x22  tdm3 slot 2  
+   0x23  tdm3 slot 3  
+   0x24  tdm3 slot 4  
+   0x25  tdm3 slot 5  
+   0x26  tdm3 slot 6  
+   0x27  tdm3 slot 7  
+   0x28  tdm3 slot 8  
+   0x29  tdm3 slot 9  
+   0x2A  tdm3 slot 10 
+   0x2B  tdm3 slot 11 
+   0x2C  tdm3 slot 12 
+   0x2D  tdm3 slot 13 
+   0x2E  tdm3 slot 14 
+   0x2F  tdm3 slot 15
+
+   0x30  slimbus 0 
+   0x31  slimbus 1 
+   0x32  slimbus 2 
+   0x33  slimbus 3 
+   0x34  slimbus 4 
+   0x35  slimbus 5 
+   0x36  slimbus 6 
+   0x37  slimbus 7 
+
+   0x40  Decimator 1 1Fs
+   0x41  Decimator 1 2Fs
+   0x42  Decimator 1 4Fs
+   --
+   0x44  Decimator 2 1Fs
+   0x45  Decimator 2 2Fs
+   0x46  Decimator 2 4Fs
+   --
+   0x48  Decimator 3 1Fs
+   0x49  Decimator 3 2Fs
+   0x4A  Decimator 3 4Fs
+   --
+   0x4C  Decimator 4 1Fs
+   0x4D  Decimator 4 2Fs
+   0x4E  Decimator 4 4Fs
+   --
+   0x50  Decimator 5 1Fs
+   0x51  Decimator 5 2Fs
+   0x52  Decimator 5 4Fs
+   --
+   0x54  Decimator 6 1Fs
+   0x55  Decimator 6 2Fs
+   0x56  Decimator 6 4Fs
+
+   0x60  Spkr  I sense left   
+   0x61  Spkr  V sense left  
+   0x62  Spkr  I sense right   
+   0x63  Spkr  V sense right  
+   0x64  Hdset I sense left  
+   0x65  Hdset I sense right 
+ 
+   0x70  CF dataout 0 
+   0x71  CF dataout 1 
+   0x72  CF dataout 2 
+   0x73  CF dataout 3 
+   0x74  CF dataout 4 
+   0x75  CF dataout 5 
+   0x76  CF dataout 6 
+   0x77  CF dataout 7 
+   0x78  CF dataout 8 
+   0x79  CF dataout 9 
+   0x7A  CF dataout 10
+   0x7B  CF dataout 11
+   0x7C  CF dataout 12
+   0x7D  CF dataout 13
+   0x7E  CF dataout 14
+   0x7F  CF dataout 15 - low latency
+   0x80  CF dataout 16 - low latency
+
+   0x90  ASRC_IN 0 
+   0x91  ASRC_IN 1 
+   0x92  ASRC_IN 2 
+   0x93  ASRC_IN 3 
+   0x94  ASRC_IN 4 
+   0x95  ASRC_IN 5 
+   0x96  ASRC_OUT 0 
+   0x97  ASRC_OUT 1 
+   0x98  ASRC_OUT 2 
+   0x99  ASRC_OUT 3 
+   0x9A  ASRC_OUT 4 
+   0x9B  ASRC_OUT 5
+
+   0xFF  NONE
+
 ========================
 Synthesis
 ---------
@@ -115,3 +342,4 @@ use cadence RC
 
 .tcl - tcl constraints file?
 .tcf - transition change format similar to saif for power estimation
+

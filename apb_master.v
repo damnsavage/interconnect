@@ -1,6 +1,6 @@
 
 module apb_master (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
-                   done, ip_din, ip_dout, ip_addr);
+                   done, ip_din, sink_data, sink_addr);
     input                    pclk;
     input                    rstn;
     output                   psel;
@@ -10,8 +10,8 @@ module apb_master (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
     output [`DATA_WIDTH-1:0] pwdata;
     input  [`DATA_WIDTH-1:0] prdata;
     output [`DATA_WIDTH-1:0] ip_din;
-    input  [`DATA_WIDTH-1:0] ip_dout;
-    input  [`ADDR_WIDTH-1:0] ip_addr;
+    input  [`DATA_WIDTH-1:0] sink_data;
+    input  [`ADDR_WIDTH-1:0] sink_addr;
     input                    done;
 
 `ifdef APB3
@@ -98,8 +98,8 @@ module apb_master (pclk, rstn, psel, penable, pwrite, paddr, pwdata, prdata,
    end 
    
    assign pwrite = 1;
-   assign paddr  = ip_addr;
-   assign pwdata = ip_dout;
+   assign paddr  = sink_addr;
+   assign pwdata = sink_data;
 
 endmodule
 
